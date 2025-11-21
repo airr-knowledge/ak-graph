@@ -6,7 +6,7 @@
 /// Query employees from database.  Return result.
 pqxx::result query()
 {
-  pqxx::connection cx{"postgresql://postgres:example@ak-db.airr-knowledge.org/airrkb_v1"};
+  pqxx::connection cx{"postgresql://postgres:example@ak-db/airrkb_v1"};
   pqxx::work tx{cx};
 
   // Silly example: Add up all salaries.  Normally you'd let the database do
@@ -17,18 +17,34 @@ pqxx::result query()
 //   std::cout << "Total salary: " << total << '\n';
 
   // Execute and process some data.
-  pqxx::result r{tx.exec("SELECT akc_id, trb_chain FROM TCellReceptor")};
+  int cnt = 0;
+  pqxx::result r{tx.exec("SELECT akc_id, trb_chain FROM \"TCellReceptor\"")};
   for (auto row: r) {
-    std::cout
+      ++cnt;
+      if (cnt % 100000 == 0) {
+	std::cout << cnt << std::endl;
+
+	std::cout
       // Address column by name.  Use c_str() to get C-style string.
       << row["akc_id"].c_str()
       << " makes "
       // Address column by zero-based index.  Use as<int>() to parse as int.
-      << row["tra_chain"].c_str()
+      << row["trb_chain"].c_str()
       << "."
       << std::endl;
-      
-      break;
+      }
+    }
+
+  std::cout<< std::endl << std::endl;
+
+    for (auto [akc_id, trb_chain] :
+	   tx.stream<std::string_view, std::string_view>("SELECT akc_id, trb_chain FROM \"TCellReceptor\" limit 20")) {
+      ++cnt;
+      ///std::cout << akc_id << std::endl;
+      if (cnt % 100000 == 0) {
+	std::cout << cnt << std::endl;
+	//std::cout << akc_id << std::endl;
+      }
     }
 
   // Not really needed, since we made no changes, but good habit to be

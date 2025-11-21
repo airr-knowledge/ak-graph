@@ -19,7 +19,7 @@ RUN apt-get update && \
         language-pack-en \
         locales \
         locales-all \
-        vim \
+        nano \
         gdb \
         valgrind \
         libboost-all-dev \
