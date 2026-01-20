@@ -76,8 +76,8 @@ void run_compairr(mem_file mf) {
     argv_strs.push_back("-o");                  // matrix output filename
     argv_strs.push_back("output_matrix.tsv");
     argv_strs.push_back("--no-matrix");         // no matrix output
-    argv_strs.push_back("-p");                  // pairs output filename
-    argv_strs.push_back("output_pairs.tsv");
+    argv_strs.push_back("-t");                  // threads
+    argv_strs.push_back("1");
 
     std::vector<char*> argv_vec;
     for (auto &s : argv_strs) {
