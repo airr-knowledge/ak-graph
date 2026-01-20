@@ -1,22 +1,23 @@
+COMPAIRR_PROGS = run_overlap stream_query stream_query_no_output stream_query_line stream_query_threads stream_query_threads_no_output
+PROG_NAMES = $(COMPAIRR_PROGS) test get_repertoire
+FILE_NAMES = output_matrix.tsv output_pairs.tsv repertoire.tsv compairr.log
+
+CXX      := g++
+CXXFLAGS := -Wall -O2
+LDLIBS   := -lpqxx
+
+# Add -lcompairr only for certain targets
+$(COMPAIRR_PROGS): LDLIBS += -lcompairr
+
+%: %.cpp
+	$(CXX) $(CXXFLAGS) -o $@ $< $(LDLIBS)
+
+# Build all programs with: make all
+all: $(PROG_NAMES)
 
 docker:
 	docker build -t airrknowledge/ak-graph .
 
-test: test.cpp
-	g++ -o test test.cpp -lpqxx
-
-# Compile get_repertoire.cpp
-get_repertoire: get_repertoire.cpp
-	g++ -o get_repertoire get_repertoire.cpp -lpqxx
-
-# Compile run_overlap.cpp
-run_overlap: run_overlap.cpp
-	g++ -o run_overlap run_overlap.cpp -lpqxx -lcompairr
-
-# Compile stream_query.cpp
-stream_query: stream_query.cpp
-	g++ -o stream_query stream_query.cpp -lpqxx -lcompairr
-
-# Optional: clean compiled binaries
 clean:
-	rm -f test get_repertoire run_overlap stream_query output_matrix.tsv output_pairs.tsv repertoire.tsv compairr.log
+	rm -f $(PROG_NAMES) $(FILE_NAMES)
+
