@@ -15,7 +15,7 @@ AK Graph Algorithms
 | stream_query_threads | 48 | 1000000 | 91m28.135s | 156m2.117s | 17m14.116s | 0m39.2061s | 90m48.3653s | 0m29.2814s | 90m19.0837s |
 | stream_query_threads | 64 | 1000000 | 94m53.812s | 182m44.747s | 16m26.075s | 0m38.8788s | 94m14.318 | 0m29.0449s | 93m14.318s |
 | stream_query_threads | 96 | 1000000 | 93m55.463s | 241m57.294s | 13m48.724s | 0m39.0387s | 93m15.6882s | 0m28.963s |  92m46.7249s |
-|
+| No Output |   |  |  |  |  |  |  |  |  |
 | stream_query_no_output | 1 | 1000000 | 51m18.046s | 50m21.783s | 0m51.085s | 0m41.3267s | 50m36.1499s | 0m29.4679s | 50m6.68193s |
 | stream_query_threads_no_output | 1 | 1000000 | 51m25.474s | 50m37.785s | 0m42.631s | 0m38.9758s | 50m46.0623s | 0m29.0679s | 50m16.9943s |
 | strean_query_threads_no_output | 2 | 1000000 | 32m5.100s | 59m21.272s | 3m5.270s | 0m39.1839s |31m25.4246s | 0m29.4821s | 30m55.9424s |
