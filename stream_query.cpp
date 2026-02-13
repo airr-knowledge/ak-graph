@@ -55,6 +55,67 @@ mem_file query_and_stream(void) {
     return {fp, mem};
 }
 
+// void output_sequence_map(mem_file , const char * output_filename) {
+
+//     char line[4096];
+
+//     while (fgets(line, sizeof(line), mf.fp) != nullptr)
+//     {
+//         fputs(line, stdout);        // or another FILE*
+//     }
+// }
+
+void output_sequence_map(mem_file &mf,
+                         const char *out_filename,
+                         const std::vector<int> &cols) {
+    FILE *out = fopen(out_filename, "w");
+    if (!out)
+    {
+        perror("Error opening output file");
+        return;
+    }
+
+    rewind(mf.fp);
+
+    char line[8192];
+
+    while (fgets(line, sizeof(line), mf.fp) != nullptr)
+    {
+        line[strcspn(line, "\n")] = '\0';
+
+        int col_index = 0;
+        char *token = strtok(line, "\t");
+
+        bool first = true;
+
+        while (token != nullptr)
+        {
+            for (int wanted : cols)
+            {
+                if (col_index == wanted)
+                {
+                    if (!first)
+                        fputc('\t', out);
+
+                    fputs(token, out);
+                    first = false;
+                    break;
+                }
+            }
+
+            token = strtok(nullptr, "\t");
+            col_index++;
+        }
+
+        fputc('\n', out);
+    }
+
+    fclose(out);
+
+    rewind(mf.fp);
+}
+
+
 void free_mem_file(mem_file mf) {
     fclose(mf.fp);
     free(mf.mem);
@@ -80,8 +141,8 @@ void run_compairr(mem_file mf) {
     argv_strs.push_back("output_pairs.tsv");
     argv_strs.push_back("-q");                  // pairs files seq id only
     argv_strs.push_back("-r");                  // deduplicate pairs
-    argv_strs.push_back("--sequence-map");      // print sequence ID/cdr3
-    argv_strs.push_back("output_seq_map.tsv");
+    // argv_strs.push_back("--sequence-map");      // print sequence ID/cdr3
+    // argv_strs.push_back("output_seq_map.tsv");
 
 
     std::vector<char*> argv_vec;
@@ -128,6 +189,7 @@ int main(void) {
     
     qs_time.start();
     mem_file mf = query_and_stream();
+    output_sequence_map(mf, "output_seq_map.tsv", {1,3});
     std::cout << "query_and_stream():  ";
     qs_time.view(std::cout); 
     std::cout << std::endl;
