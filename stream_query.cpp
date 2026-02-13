@@ -25,7 +25,8 @@ mem_file query_and_stream(void) {
     for (auto [int_index, junction_aa] :
         tx.stream<std::string, std::string>(
             "SELECT int_index, junction_aa "
-            "FROM unique_junctions"
+            "FROM unique_junctions "
+            "LIMIT 10000"
         )
     ) {
         buffer += repertoire_id + "\t";         // repertoire_id
@@ -67,7 +68,8 @@ mem_file query_and_stream(void) {
 
 void output_sequence_map(mem_file &mf,
                          const char *out_filename,
-                         const std::vector<int> &cols) {
+                         const std::vector<int> &cols,
+                         bool keep_header) {
     FILE *out = fopen(out_filename, "w");
     if (!out)
     {
@@ -79,35 +81,43 @@ void output_sequence_map(mem_file &mf,
 
     char line[8192];
 
+    bool header = true;
     while (fgets(line, sizeof(line), mf.fp) != nullptr)
     {
-        line[strcspn(line, "\n")] = '\0';
+        if (keep_header || !header) {
 
-        int col_index = 0;
-        char *token = strtok(line, "\t");
-
-        bool first = true;
-
-        while (token != nullptr)
-        {
-            for (int wanted : cols)
+            line[strcspn(line, "\n")] = '\0';
+    
+            int col_index = 0;
+            char *token = strtok(line, "\t");
+    
+            bool first = true;
+    
+            while (token != nullptr)
             {
-                if (col_index == wanted)
+                for (int wanted : cols)
                 {
-                    if (!first)
-                        fputc('\t', out);
-
-                    fputs(token, out);
-                    first = false;
-                    break;
+                    if (col_index == wanted)
+                    {
+                        if (!first)
+                            fputc('\t', out);
+    
+                        fputs(token, out);
+                        first = false;
+                        break;
+                    }
                 }
+    
+                token = strtok(nullptr, "\t");
+                col_index++;
             }
-
-            token = strtok(nullptr, "\t");
-            col_index++;
+    
+            fputc('\n', out);
+        } else {
+            header=false;
+            continue;
         }
-
-        fputc('\n', out);
+        
     }
 
     fclose(out);
@@ -189,7 +199,7 @@ int main(void) {
     
     qs_time.start();
     mem_file mf = query_and_stream();
-    output_sequence_map(mf, "output_seq_map.tsv", {1,3});
+    output_sequence_map(mf, "output_seq_map.tsv", {1,3}, false);
     std::cout << "query_and_stream():  ";
     qs_time.view(std::cout); 
     std::cout << std::endl;
