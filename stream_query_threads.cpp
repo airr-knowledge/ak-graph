@@ -77,7 +77,11 @@ void run_compairr(mem_file mf) {
     argv_strs.push_back("output_matrix.tsv");
     argv_strs.push_back("--no-matrix");         // no matrix output
     argv_strs.push_back("-p");                  // pairs output filename
-    argv_strs.push_back("pairs_with_indels.tsv");
+    argv_strs.push_back("output_pairs.tsv");
+    argv_strs.push_back("-q");                  // pairs files seq id only
+    argv_strs.push_back("-r");                  // deduplicate pairs
+    argv_strs.push_back("--sequence-map");      // print sequence ID/cdr3
+    argv_strs.push_back("output_seq_map.tsv");
     argv_strs.push_back("-t");                  // threads
     argv_strs.push_back("8");
 
