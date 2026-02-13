@@ -25,8 +25,7 @@ mem_file query_and_stream(void) {
     for (auto [int_index, junction_aa] :
         tx.stream<std::string, std::string>(
             "SELECT int_index, junction_aa "
-            "FROM unique_junctions "
-            "LIMIT 10000"
+            "FROM unique_junctions"
         )
     ) {
         buffer += repertoire_id + "\t";         // repertoire_id
