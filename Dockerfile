@@ -6,15 +6,13 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         python3 \
+        python3-dev \
         python3-pip \
         python3-sphinx \
-        python3-scipy \
-        python3-networkx \
-	    python3-pandas \
-	    python3-matplotlib \
-        python3-igraph \
-        python3-cairocffi \
+        python3.12-venv \
         build-essential \
+        libomp-dev \
+        cmake \
         software-properties-common \
         autoconf \
         automake \
@@ -33,3 +31,11 @@ RUN apt-get update && \
         valgrind \
         libboost-all-dev \
         libpqxx-dev libpq-dev
+
+# Create and enable virtual environment
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install networkit inside venv
+RUN pip install --upgrade pip
+RUN pip install networkit matplotlib numpy pandas powerlaw networkx seaborn scipy scikit-learn psycopg
