@@ -22,14 +22,14 @@ mem_file query_and_stream(void) {
 
     std::string buffer = "repertoire_id\tsequence_id\tduplicate_count\tjunction_aa\n";
     std::string repertoire_id = "rep1"; // same for all rows
-    for (auto [int_index, junction_aa] :
+    for (auto [sequence_id, junction_aa] :
         tx.stream<std::string, std::string>(
-            "SELECT int_index, junction_aa "
-            "FROM unique_junctions"
+            "SELECT sequence_id, junction_aa "
+            "FROM unique_junction_trb_v1"
         )
     ) {
         buffer += repertoire_id + "\t";         // repertoire_id
-        buffer += int_index + "\t";             // sequence_id
+        buffer += sequence_id + "\t";             // sequence_id
         buffer += "1\t";                        // duplicate_count
         buffer += junction_aa;                  // junction_aa
         buffer += "\n";
@@ -147,7 +147,7 @@ void run_compairr(mem_file mf) {
     argv_strs.push_back("output_matrix.tsv");
     argv_strs.push_back("--no-matrix");         // no matrix output
     argv_strs.push_back("-p");                  // pairs output filename
-    argv_strs.push_back("output_pairs.tsv");
+    argv_strs.push_back("output_pairs_trb_v2.tsv");
     argv_strs.push_back("-q");                  // pairs files seq id only
     argv_strs.push_back("-r");                  // deduplicate pairs
     // argv_strs.push_back("--sequence-map");      // print sequence ID/cdr3
@@ -198,7 +198,7 @@ int main(void) {
     
     qs_time.start();
     mem_file mf = query_and_stream();
-    output_sequence_map(mf, "output_seq_map.tsv", {1,3}, false);
+    output_sequence_map(mf, "output_seq_map_trb_v2.tsv", {1,3}, false);
     std::cout << "query_and_stream():  ";
     qs_time.view(std::cout); 
     std::cout << std::endl;
