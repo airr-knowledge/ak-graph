@@ -2,6 +2,8 @@
 AK Graph Algorithms
 
 # Compile and setup
+- `git clone https://github.com/airr-knowledge/ak-graph.git`
+- CD into ak-graph and init submodules: `git submodule update --init --recursive`
 - Run `make` to show help.
 - Run `make docker` to build docker image. The docker will compile all programs.
 
