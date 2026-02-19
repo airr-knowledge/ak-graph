@@ -7,17 +7,6 @@ CXX      := g++
 CXXFLAGS := -Wall -O2
 LDLIBS   := -lpqxx
 
-# Add -lcompairr only for certain targets
-$(COMPAIRR_PROGS): LDLIBS += -lcompairr
-
-%: %.cpp
-	@mkdir -p $(BIN_DIR)
-	$(CXX) $(CXXFLAGS) -o $@ $< $(LDLIBS)
-	mv $@ $(BIN_DIR)/$@
-
-# Build all programs with: make all
-all: $(PROG_NAMES)
-
 help:
 	@echo ""
 	@echo "------------------------------------------------------------"
@@ -28,7 +17,7 @@ help:
 	@echo ""
 	@echo "------------------------------------------------------------"
 	@echo "  (run within docker)"
-	@echo "make test                  -- read code"
+	@echo "make all                   -- compiles all C++ programs"
 	@echo "make graph_analysis        -- Read compairr output, generate and save graph"
 	@echo "make connected_components  -- Compute connected components"
 	@echo "make thread_graph          -- thread example"
@@ -37,6 +26,17 @@ help:
 
 docker:
 	docker build -t airrknowledge/ak-graph .
+
+# Add -lcompairr only for certain targets
+$(COMPAIRR_PROGS): LDLIBS += -lcompairr
+
+%: %.cpp
+	@mkdir -p $(BIN_DIR)
+	$(CXX) $(CXXFLAGS) -o $@ $< $(LDLIBS)
+	mv $@ $(BIN_DIR)/$@
+
+# Build all programs with: make all
+all: $(PROG_NAMES)
 
 clean:
 	rm -f $(addprefix $(BIN_DIR)/,$(PROG_NAMES))

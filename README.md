@@ -1,11 +1,16 @@
 # ak-graph
 AK Graph Algorithms
 
-# Usage
-- Install `compairr` from [GitHub](https://github.com/airr-knowledge/compairr.git)
+# Compile and setup
+- Run `make` to show help.
+- Run `make docker` to build docker image. The docker will compile all programs.
+
+# Run graph analysis
 - Run `docker run --network ak-db-network -v $PWD:/work -it airrknowledge/ak-graph bash` to start `ak-graph` container.
-- CD into `compairr` and switch to `akc-enhancements` branch, then run `make install-lib` to install the compairr library.
-- CD into `ak-graph` and run `make stream_query.cpp` and finally `./stream_query` to gerneate `output_pairs.tsv`.
+- Compiled programs will be in /ak-graph directory inside docker, but use /work for development.
+- Run `make ???` to generate unique CDR3 sequence tables in the database.
+- Run `make ???` to extract CDR3 sequences from database and generate distance=1 graph.
+- Run `make ???` to perform analysis XXX on graph.
 
 # Timing Analysis
 | Program | Threads | CHUNK | real | user | sys | query_and_stream() | run_compairr() | db_read() | compute_overlap() |
