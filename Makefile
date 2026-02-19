@@ -18,6 +18,23 @@ $(COMPAIRR_PROGS): LDLIBS += -lcompairr
 # Build all programs with: make all
 all: $(PROG_NAMES)
 
+help:
+	@echo ""
+	@echo "------------------------------------------------------------"
+	@echo "AIRR Knowledge graph analysis"
+	@echo "------------------------------------------------------------"
+	@echo ""
+	@echo "make docker             -- Build docker image"
+	@echo ""
+	@echo "------------------------------------------------------------"
+	@echo "  (run within docker)"
+	@echo "make test                  -- read code"
+	@echo "make graph_analysis        -- Read compairr output, generate and save graph"
+	@echo "make connected_components  -- Compute connected components"
+	@echo "make thread_graph          -- thread example"
+	@echo ""
+	@echo "------------------------------------------------------------"
+
 docker:
 	docker build -t airrknowledge/ak-graph .
 

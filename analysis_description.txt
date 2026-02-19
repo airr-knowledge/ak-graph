@@ -1,0 +1,27 @@
+
+C++ boost
+
+make graph_analysis
+./graph_analysis
+
+lines: 2480000000
+Graph built with 125081147 vertices and 1247454554 edges.
+Elapsed time: 90.6512 seconds
+Elapsed time from start: 23335.3 seconds
+lines: 2490000000
+Graph built with 125082738 vertices and 1247504832 edges.
+Elapsed time: 45.5262 seconds
+Elapsed time from start: 23380.8 seconds
+lines: 2495022329
+Graph built with 125082934 vertices and 1247511165 edges.
+Current time: Thu Nov 27 03:34:36 2025
+Serializing graph.
+Graph serialized to graph.bin
+Elapsed time: 3980.36 seconds
+Elapsed time from start: 27361.2 seconds
+Loading graph.
+Graph deserialized from graph.bin
+Elapsed time: 3609 seconds
+Elapsed time from start: 30970.2 seconds
+
+Graph built with 125082934 vertices and 1247511165 edges.
