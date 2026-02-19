@@ -42,6 +42,10 @@
 
 # output
 *.tsv
+*.log
 
 # binaries
 /bin/*
+
+# data
+/graph_data/*
