@@ -9,20 +9,22 @@ LDLIBS   := -lpqxx
 
 help:
 	@echo ""
-	@echo "------------------------------------------------------------"
-	@echo "AIRR Knowledge graph analysis"
-	@echo "------------------------------------------------------------"
+	@echo "----------------------------------------------------------------------------------------"
+	@echo "                          AIRR Knowledge graph analysis"
+	@echo "----------------------------------------------------------------------------------------"
 	@echo ""
-	@echo "make docker             -- Build docker image"
+	@echo "make docker                              -- Build docker image"
 	@echo ""
-	@echo "------------------------------------------------------------"
+	@echo "----------------------------------------------------------------------------------------"
 	@echo "  (run within docker)"
-	@echo "make all                   -- compiles all C++ programs"
-	@echo "make graph_analysis        -- Read compairr output, generate and save graph"
-	@echo "make connected_components  -- Compute connected components"
-	@echo "make thread_graph          -- thread example"
+	@echo "make all                                 -- Compiles all C++ programs"
+	@echo "make stream_query                        -- Query DB, perform overlap, write pairs file"
+	@echo "make stream_query_no_output              -- Same as stream_query w/o output"
+	@echo "make stream_query_threads                -- Same as stream_query but with threads"
+	@echo "make stream_query_threads_no_output      -- Same as stream_query_threads w/o output"
+	@echo "make clean                               -- Remove all binary and output files"
 	@echo ""
-	@echo "------------------------------------------------------------"
+	@echo "----------------------------------------------------------------------------------------"
 
 docker:
 	docker build -t airrknowledge/ak-graph .
