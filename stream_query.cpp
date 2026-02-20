@@ -142,12 +142,12 @@ void run_compairr(mem_file mf) {
     argv_strs.push_back("1");
     argv_strs.push_back("-i");                  // indels
     argv_strs.push_back("-l");                  // log filename
-    argv_strs.push_back("compairr.log");
+    argv_strs.push_back("./output/compairr.log");
     argv_strs.push_back("-o");                  // matrix output filename
-    argv_strs.push_back("output_matrix.tsv");
+    argv_strs.push_back("./output/output_matrix.tsv");
     argv_strs.push_back("--no-matrix");         // no matrix output
     argv_strs.push_back("-p");                  // pairs output filename
-    argv_strs.push_back("output_pairs_trb_v2.tsv");
+    argv_strs.push_back("./output/output_pairs_trb_v2.tsv");
     argv_strs.push_back("-q");                  // pairs files seq id only
     argv_strs.push_back("-r");                  // deduplicate pairs
     // argv_strs.push_back("--sequence-map");      // print sequence ID/cdr3
@@ -198,7 +198,7 @@ int main(void) {
     
     qs_time.start();
     mem_file mf = query_and_stream();
-    output_sequence_map(mf, "output_seq_map_trb_v2.tsv", {1,3}, false);
+    output_sequence_map(mf, "./output/output_seq_map_trb_v2.tsv", {1,3}, false);
     std::cout << "query_and_stream():  ";
     qs_time.view(std::cout); 
     std::cout << std::endl;
