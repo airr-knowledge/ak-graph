@@ -2,12 +2,15 @@ import psycopg
 import sys
 import re
 import argparse
+from dotenv import dotenv_values
+
+config = dotenv_values(".env")
 
 DB_CONFIG = {
-    "host": "ak-db",
-    "dbname": "airrkb_v1",
-    "user": "postgres",
-    "password": "example",
+    "host": config['POSTGRES_HOST'],
+    "dbname": config['POSTGRES_DB'],
+    "user": config['POSTGRES_USER'],
+    "password": config['POSTGRES_PASSWORD'],
 }
 
 # To only allow simple SQL identifiers
@@ -70,17 +73,19 @@ BUILD_FINAL_TABLE_SQL = """
 def main():
     parser = argparse.ArgumentParser("Create and populate junction table.")
     
-    parser.add_argument("locus_type", help="Locus type (TCR or BCR)")
-    parser.add_argument("chain_type", help="Chain type (tra, trb, igh, igk etc.)")
+    parser.add_argument("locus", help="Locus [tra, trb, trd, trg, igh, igk, igl]")
     parser.add_argument("--species", default="NCBITAXON:9606", help="Species CURIE (default: NCBITAXON:9606)")
     parser.add_argument("--version", default="v1", help="Version of the table name that will be put on the table")
     
     args = parser.parse_args()
-    locus_type = args.locus_type
-    chain_type = args.chain_type
+    locus = args.locus.lower()
     species = args.species
     version = args.version
-    
+
+    if locus not in ['tra', 'trb', 'trd', 'trg', 'igh', 'igk', 'igl']:
+        parser.print_help(sys.stderr) # Prints help message to standard error
+        sys.exit(1) # Exit with an error code
+
     # create table name joining the locus and version
     table_name = f'unique_junctions_{locus}_{version}'
     
@@ -102,12 +107,10 @@ def main():
             cur.execute(CREATE_TEMP_TABLE_SQL)
             
             # Populate temp table
-            if locus_type == "TCR":
-                sql = POPULATE_TABLE_TCR_SQL.format(chain_type=chain_type)
-            elif locus_type == "BCR":
-                sql = POPULATE_TABLE_BCR_SQL.format(chain_type=chain_type)
-            else:
-                raise ValueError("Invalid Locus type, must be TCR or BCR")
+            if locus in ['tra', 'trb', 'trd', 'trg']:
+                sql = POPULATE_TABLE_TCR_SQL.format(chain_type=locus)
+            elif locus in ['igh', 'igk', 'igl']:
+                sql = POPULATE_TABLE_BCR_SQL.format(chain_type=locus)
             
             print("Populating temporary table with junction_aa...")
             if DEBUG:
