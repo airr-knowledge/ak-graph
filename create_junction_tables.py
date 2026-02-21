@@ -69,17 +69,21 @@ BUILD_FINAL_TABLE_SQL = """
 
 def main():
     parser = argparse.ArgumentParser("Create and populate junction table.")
-    parser.add_argument("table_name", help="Name of the table to create")
+    
     parser.add_argument("locus_type", help="Locus type (TCR or BCR)")
     parser.add_argument("chain_type", help="Chain type (tra, trb, igh, igk etc.)")
     parser.add_argument("--species", default="NCBITAXON:9606", help="Species CURIE (default: NCBITAXON:9606)")
+    parser.add_argument("--version", default="v1", help="Version of the table name that will be put on the table")
     
     args = parser.parse_args()
-    table_name = args.table_name
     locus_type = args.locus_type
     chain_type = args.chain_type
     species = args.species
-
+    version = args.version
+    
+    # create table name joining the locus and version
+    table_name = f'unique_junctions_{locus}_{version}'
+    
     if not VALID_NAME.match(table_name):
         raise ValueError("Invalid table name")
     
