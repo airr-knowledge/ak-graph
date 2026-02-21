@@ -1,7 +1,22 @@
+
+# AIRR Knowledge graph analyses
+
+# config
+include .env
+PG_CONN=postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST)/postgres
+PG_AK_CONN=postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST)/$(POSTGRES_DB)
+PG_DISPLAY_CONN=postgresql://$(POSTGRES_USER):XXXXXX@$(POSTGRES_HOST)/$(POSTGRES_DB)
+# database connection info
+export PG_AK_CONN
+# data for ak-etvl
+export IMPORT_DATA
+# data for ak-graph
+export GRAPH_DATA
+
 BIN_DIR = ./bin
 OUTPUT_DIR = ./output
-COMPAIRR_PROGS = run_overlap stream_query stream_query_no_output stream_query_line stream_query_threads stream_query_threads_no_output
-PROG_NAMES = $(COMPAIRR_PROGS) test get_repertoire
+COMPAIRR_PROGS = stream_query stream_query_no_output stream_query_line stream_query_threads stream_query_threads_no_output
+PROG_NAMES = stream_query stream_query_threads
 
 CXX      := g++
 CXXFLAGS := -Wall -O2
@@ -11,6 +26,10 @@ help:
 	@echo ""
 	@echo "----------------------------------------------------------------------------------------"
 	@echo "                          AIRR Knowledge graph analysis"
+	@echo "----------------------------------------------------------------------------------------"
+	@echo "                                 Using DB: $(PG_DISPLAY_CONN)"
+	@echo "       Host folder for ak-etvl (/ak_data): $(IMPORT_DATA)"
+	@echo "Host folder for ak-graph (/ak_graph_data): $(GRAPH_DATA)"
 	@echo "----------------------------------------------------------------------------------------"
 	@echo ""
 	@echo "make docker                              -- Build docker image"

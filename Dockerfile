@@ -32,19 +32,21 @@ RUN apt-get update && \
         libboost-all-dev \
         libpqxx-dev libpq-dev
 
-# compile C++ code
-RUN mkdir /ak-graph
-COPY . /ak-graph
-RUN cd /ak-graph/compairr && make install
-RUN cd /ak-graph && make
-
 # Create and enable virtual environment
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Install networkit inside venv
 RUN pip install --upgrade pip
-RUN pip install networkit matplotlib numpy pandas powerlaw networkx seaborn scipy scikit-learn psycopg
+RUN pip install networkit matplotlib numpy pandas powerlaw networkx seaborn scipy scikit-learn psycopg python-dotenv
+
+# compile C++ code
+RUN mkdir /ak-graph
+COPY . /ak-graph
+RUN cd /ak-graph/compairr && make install
+RUN cd /ak-graph && make all
+ENV PATH="/ak-graph/bin:$PATH"
 
 RUN mkdir /work
-WORKDIR /work
+ENV PATH="/work/bin:$PATH"
+WORKDIR /ak-graph

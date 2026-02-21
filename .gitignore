@@ -1,3 +1,6 @@
+# local config
+.env
+
 # Prerequisites
 *.d
 

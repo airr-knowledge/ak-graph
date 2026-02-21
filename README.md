@@ -4,12 +4,24 @@ AK Graph Algorithms
 # Compile and setup
 - `git clone https://github.com/airr-knowledge/ak-graph.git`
 - CD into ak-graph and init submodules: `git submodule update --init --recursive`
+- cp .env.defaults .env
+- nano .env # set database and other deployment config
 - Run `make` to show help.
+- Most make targets are performed within a docker container.
 - Run `make docker` to build docker image. The docker will compile all programs.
 
-# Run graph analysis
-- Run `docker run --network ak-db-network -v $PWD:/work -it airrknowledge/ak-graph bash` to start `ak-graph` container.
+# docker info
 - Compiled programs will be in /ak-graph directory inside docker, but use /work for development.
+- /ak-graph/bin and /work/bin are added to PATH
+
+# development, start shell inside docker, graph data at /ak_graph_data is stored in work
+- Run `docker run --network ak-db-network -v $PWD:/work -v ./graph_data:/ak_graph_data -it airrknowledge/ak-graph bash` to start `ak-graph` container.
+- Create a bash alias to help `alias docker-ak-graph-dev="docker run --network ak-db-network -v $PWD:/work ./graph_data:/ak_graph_data -it airrknowledge/ak-graph bash"`
+
+# production runs
+- GRAPH_DATA environment variables is the host folder for the ak-graph data
+- Run `docker run --network ak-db-network -v ${GRAPH_DATA}:/ak_graph_data -it airrknowledge/ak-graph bash` for shell in container.
+
 - Run `make ???` to generate unique CDR3 sequence tables in the database.
 - Run `make ???` to extract CDR3 sequences from database and generate distance=1 graph.
 - Run `make ???` to perform analysis XXX on graph.
