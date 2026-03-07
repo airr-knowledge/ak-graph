@@ -1,0 +1,12 @@
+.git
+.gitignore
+ak_graph_data
+logFiles
+output
+__pycache__
+*.pyc
+*.log
+.env
+*.zip
+*.tar
+*.tsv

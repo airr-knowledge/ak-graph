@@ -73,53 +73,62 @@ BUILD_FINAL_TABLE_SQL = """
 def main():
     parser = argparse.ArgumentParser("Create and populate junction table.")
     
-    parser.add_argument("locus", help="Locus [tra, trb, trd, trg, igh, igk, igl]")
-    parser.add_argument("--species", default="NCBITAXON:9606", help="Species CURIE (default: NCBITAXON:9606)")
-    parser.add_argument("--version", default="v1", help="Version of the table name that will be put on the table")
+    parser.add_argument("LOCUS", help="Locus [tra, trb, trd, trg, igh, igk, igl]")
+    parser.add_argument("--SPECIES", default="NCBITAXON:9606", help="Species CURIE (default: NCBITAXON:9606)")
+    parser.add_argument("--VERSION", default="v1", help="Version of the table name that will be put on the table")
     
     args = parser.parse_args()
-    locus = args.locus.lower()
-    species = args.species
-    version = args.version
+    LOCUS = args.LOCUS.lower()
+    SPECIES = args.SPECIES
+    VERSION = args.VERSION
 
-    if locus not in ['tra', 'trb', 'trd', 'trg', 'igh', 'igk', 'igl']:
+    if LOCUS not in ['tra', 'trb', 'trd', 'trg', 'igh', 'igk', 'igl']:
         parser.print_help(sys.stderr) # Prints help message to standard error
         sys.exit(1) # Exit with an error code
 
-    # create table name joining the locus and version
-    table_name = f'unique_junctions_{locus}_{version}'
+    # create table name joining the LOCUS and VERSION
+    TABLE_NAME = f'unique_junctions_{LOCUS}_{VERSION}'
     
-    if not VALID_NAME.match(table_name):
+    print("================================================")
+    print("                   Parameters                   ")
+    print("================================================")
+    print(f"LOCUS:          {LOCUS}")
+    print(f"SPECIES:        {SPECIES}")
+    print(f"VERSION:        {VERSION}")
+    print(f"TABLE-NAME:     {TABLE_NAME}")
+    print("================================================")
+    
+    if not VALID_NAME.match(TABLE_NAME):
         raise ValueError("Invalid table name")
     
     with psycopg.connect(**DB_CONFIG) as conn:
         with conn.cursor() as cur:
             # Drop table if exists
-            print(f"Dropping table {table_name} if it exists...")
-            cur.execute(DROP_SQL_QUERY.format(table_name=table_name))
+            print(f"Dropping table {TABLE_NAME} if it exists...")
+            cur.execute(DROP_SQL_QUERY.format(table_name=TABLE_NAME))
             
             # Create final table
-            print(f"Creating table {table_name}...")
-            cur.execute(CREATE_TABLE_SQL.format(table_name=table_name))
+            print(f"Creating table {TABLE_NAME}...")
+            cur.execute(CREATE_TABLE_SQL.format(table_name=TABLE_NAME))
             
             # Create temporary staging table
             print("Creating temporary table for raw junctions...")
             cur.execute(CREATE_TEMP_TABLE_SQL)
             
             # Populate temp table
-            if locus in ['tra', 'trb', 'trd', 'trg']:
-                sql = POPULATE_TABLE_TCR_SQL.format(chain_type=locus)
-            elif locus in ['igh', 'igk', 'igl']:
-                sql = POPULATE_TABLE_BCR_SQL.format(chain_type=locus)
+            if LOCUS in ['tra', 'trb', 'trd', 'trg']:
+                sql = POPULATE_TABLE_TCR_SQL.format(chain_type=LOCUS)
+            elif LOCUS in ['igh', 'igk', 'igl']:
+                sql = POPULATE_TABLE_BCR_SQL.format(chain_type=LOCUS)
             
             print("Populating temporary table with junction_aa...")
             if DEBUG:
                 print(sql)
-            cur.execute(sql, {"species": species})
+            cur.execute(sql, {"species": SPECIES})
             
             # Build final table with dense IDs
             print("Building final table with dense consecutive IDs...")
-            cur.execute(BUILD_FINAL_TABLE_SQL.format(table_name=table_name))
+            cur.execute(BUILD_FINAL_TABLE_SQL.format(table_name=TABLE_NAME))
             
         
         conn.commit()

@@ -16,7 +16,7 @@ def log(msg):
     with open(LOG_FILE, "a") as f:
         f.write(str(msg) + "\n")
     
-def build_and_save_graph(EDGE_FILE, graph_output_path):
+def build_and_save_graph(EDGE_FILE, GRAPH_FILE):
     '''
     Load graph from edge list and save the graph in networkit graph format for faster load later
     '''
@@ -33,7 +33,7 @@ def build_and_save_graph(EDGE_FILE, graph_output_path):
     log(f"Edge load time: {time.time() - start:.2f} sec\n")
     
     start = time.time()
-    nk.writeGraph(g, graph_output_path, nk.Format.NetworkitBinary, chunks=16)
+    nk.writeGraph(g, GRAPH_FILE, nk.Format.NetworkitBinary, chunks=16)
     log(f"Time to write the file in binary: {time.time() - start:.2f} sec\n")
     
     return g
@@ -48,20 +48,20 @@ def load_junction_aa_mapping(MAP_FILE):
     with open(MAP_FILE, "r") as f:
         for line in f:
             parts = line.rstrip("\n").split("\t")
-            if len(parts) == 2:
-                id_dict[int(parts[0])] = parts[1]
+            # if len(parts) == 2:
+            id_dict[int(parts[0])] = parts[1]
 
     log(f"Loaded {len(id_dict):,} nodes")
     log(f"Mapping read time: {time.time() - start:.2f} sec\n")
     return id_dict
 
 
-def load_graph(graph_path):
+def load_graph(GRAPH_FILE):
     '''
     Load graph from binary format
     '''
     start = time.time()
-    g = nk.readGraph(graph_path, nk.Format.NetworkitBinary)
+    g = nk.readGraph(GRAPH_FILE, nk.Format.NetworkitBinary)
     log(f"Time to read the binary graph file: {time.time() - start:.2f} sec\n")
     return g
 
@@ -183,15 +183,13 @@ def analyze_betweenness(g, FIG_DIR):
     log(f"Core decomposition and plot total time: {time.time() - start:.2f} sec\n")
 
 
-def get_general_graph_statistics(g, FIG_DIR):
-    print("We are here.")
+def get_general_graph_statistics(g, FIG_DIR, LCC_FILE):
     # Network overview
     start = time.time()
     log("Graph overview with all nodes.")
     log(f"{nk.overview(g)}")
 
     log(f"Graph overview time: {time.time() - start:.2f} sec\n")
-
     
     # Degree distribution Before removing isolates
     start = time.time()
@@ -256,9 +254,8 @@ def get_general_graph_statistics(g, FIG_DIR):
     log(f"Largest connected component finiding time: {time.time() - start:.2f} sec\n")
 
     start = time.time()
-    nk.writeGraph(largest_component, f'{WORKDIR}/trb_largest_connected_component_v1.edgelist.txt', nk.Format.EdgeListTabOne)
+    nk.writeGraph(largest_component, LCC_FILE, nk.Format.EdgeListTabOne)
     log(f"Largest connected component write time: {time.time() - start:.2f} sec\n")
-
 
     # Connected Component Sizes plot without isolates and biggest one at the end
     start = time.time()
@@ -284,46 +281,64 @@ def get_general_graph_statistics(g, FIG_DIR):
     log(f"Connected component sizes plot time: {time.time() - start:.2f} sec\n")
 
 
-WORKDIR = "./ak_graph_data/"
+# WORKDIR = "./ak_graph_data/"
 
 LOG_FILE = None
 def main():
     parser = argparse.ArgumentParser("Generate graph using networkit.")
-    parser.add_argument("analysis_type", help="Either build_graph or graph_stat")
-    parser.add_argument("locus", help="Locus to build/analyze the graph (tra, trb, trd, trg)")
-    parser.add_argument("--version", default="v1", help="Version of the table name that will be put on the graph")
-    parser.add_argument("--max_threads", default=64, help="Maximum number of threads to use by the graph algorithm")
+    parser.add_argument("ANALYSIS_TYPE", help="alaysis_tyoe [build_graph, graph_stat, map_junction]")
+    parser.add_argument("LOCUS", help="Locus to build/analyze the graph (tra, trb, trd, trg)")
+    parser.add_argument("--VERSION", default="v1", help="Version of the table name that will be put on the graph")
+    parser.add_argument("--WORKDIR", default="./ak_graph_data/", help="Version of the table name that will be put on the graph")
+    parser.add_argument("--MAX_THREADS", default=64, help="Maximum number of threads to use by the graph algorithm")
     
     args = parser.parse_args()
-    analysis_type = args.analysis_type
-    locus = args.locus
-    version = args.version
-    max_threads = args.max_threads
+    ANALYSIS_TYPE = args.ANALYSIS_TYPE
+    LOCUS = args.LOCUS
+    VERSION = args.VERSION
+    WORKDIR = args.WORKDIR
+    MAX_THREADS = args.MAX_THREADS
     
-    print("Parameters: ")
-    print("analysis_type: ", analysis_type)
-    print("locus: ", locus)
-    print("version: ", version)
-    print("max_threads: ", max_threads)
+    if LOCUS not in ['tra', 'trb', 'trd', 'trg', 'igh', 'igk', 'igl']:
+        parser.print_help(sys.stderr) # Prints help message to standard error
+        sys.exit(1) # Exit with an error code
+    
+    
     global LOG_FILE
-    EDGE_FILE = f"{WORKDIR}/{locus}_output_pairs_{version}.tsv"
-    GRAPH_OUTPUT_PATH = f"{WORKDIR}/{locus}_graph_{version}.nkbg003"
-    MAP_FILE = f"{WORKDIR}/{locus}_output_seq_map_{version}.tsv"
-    FIG_DIR = f"{WORKDIR}/figures/{locus}_{version}/"
-    LOG_FILE = f"{WORKDIR}/logs/{locus}_analysis_{version}.log"
+    
+    EDGE_FILE = f"{WORKDIR}/{LOCUS}_output_pairs_{VERSION}.tsv"
+    GRAPH_FILE = f"{WORKDIR}/{LOCUS}_graph_{VERSION}.nkbg003"
+    MAP_FILE = f"{WORKDIR}/{LOCUS}_output_seq_map_{VERSION}.tsv"
+    FIG_DIR = f"{WORKDIR}/figures/{LOCUS}_{VERSION}/"
+    LOG_FILE = f"{WORKDIR}/logs/{LOCUS}_analysis_{VERSION}.log"
+    LCC_FILE = f'{WORKDIR}/{LOCUS}_largest_connected_component_{VERSION}.edgelist.txt'
+    
     #create figure directory if not exist
     os.makedirs(FIG_DIR, exist_ok=True)
     
-    # log(f"Maximum number of available threads: {nk.getMaxNumberOfThreads()}")
-    log(f"Setting max number of threads to 64.")
+    log("================================================")
+    log("                   Parameters                   ")
+    log("================================================")
+    log(f"ANALYSIS_TYPE:      {ANALYSIS_TYPE}")
+    log(f"LOCUS:              {LOCUS}")
+    log(f"VERSION:            {VERSION}")
+    log(f"WORKDIR:            {WORKDIR}")
+    log(f"MAX_THREADS:        {MAX_THREADS}")
+    log("================================================")
     
-    nk.setNumberOfThreads(64)
+    # log(f"Maximum number of available threads: {nk.getMaxNumberOfThreads()}")
+    log(f"Setting max number of threads to {MAX_THREADS}.")
+    
+    nk.setNumberOfThreads(MAX_THREADS)
 
-    if analysis_type == 'build_graph':
-        build_and_save_graph(EDGE_FILE, GRAPH_OUTPUT_PATH)
-    elif analysis_type == 'graph_stat':
-        g = load_graph(GRAPH_OUTPUT_PATH)
-        get_general_graph_statistics(g, FIG_DIR)
+    if ANALYSIS_TYPE == 'build_graph':
+        build_and_save_graph(EDGE_FILE, GRAPH_FILE)
+    elif ANALYSIS_TYPE == 'graph_stat':
+        g = load_graph(GRAPH_FILE)
+        get_general_graph_statistics(g, FIG_DIR, LCC_FILE)
+    elif ANALYSIS_TYPE == 'map_junction':
+        id_dict = load_junction_aa_mapping(MAP_FILE)
+        print(len(id_dict))
     else:
         print("Wrong analysis type. Please put build_graph or graph_stat")
 

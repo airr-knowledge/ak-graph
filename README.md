@@ -22,9 +22,11 @@ AK Graph Algorithms
 - GRAPH_DATA environment variables is the host folder for the ak-graph data
 - Run `docker run --network ak-db-network -v ${GRAPH_DATA}:/ak_graph_data -it airrknowledge/ak-graph bash` for shell in container.
 
-- Run `make ???` to generate unique CDR3 sequence tables in the database.
-- Run `make ???` to extract CDR3 sequences from database and generate distance=1 graph.
-- Run `make ???` to perform analysis XXX on graph.
+- Run `make create-all-table` to generate unique CDR3 sequence tables in the database.
+- Run `make cdr3-edgelist-threads` to extract CDR3 sequences from database and generate distance=1 graph.
+- Run `make build-graph` to generate the graph from the edge list and save it in networkit format.
+- Run `make graph-stat` to perform some general statitical analysis on graph.
+- Run `make epitope-analysis` to perform epitope analysis using available IEDB epitopes in conjunction with the junction_aa graph.
 
 # Timing Analysis
 | Program | Threads | CHUNK | real | user | sys | query_and_stream() | run_compairr() | db_read() | compute_overlap() |

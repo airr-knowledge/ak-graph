@@ -38,11 +38,12 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Install networkit inside venv
 RUN pip install --upgrade pip
-RUN pip install networkit matplotlib numpy pandas powerlaw networkx seaborn scipy scikit-learn psycopg python-dotenv
+RUN pip install networkit matplotlib numpy pandas powerlaw networkx seaborn scipy scikit-learn psycopg python-dotenv pyarrow
 
 # compile C++ code
 RUN mkdir /ak-graph
 COPY . /ak-graph
+RUN cd /ak-graph && cp .env.defaults .env
 RUN cd /ak-graph/compairr && make install
 RUN cd /ak-graph && make all
 ENV PATH="/ak-graph/bin:$PATH"

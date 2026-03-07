@@ -182,22 +182,29 @@ void run_compairr(const mem_file& mf, const std::string& locus, const std::strin
     close_files();
 }
 
-// int main(int argc, char* argv[]) {
-int main(void) {
-    
-    Timer qs_time, rc_time;
-    // std::string locus = argv[1];
-    // std::string version = argv[2];
-    // std::string work_dir = argv[3];
+int main(int argc, char* argv[]) {
 
-    std::string locus = "trg";
-    std::string version = "v1";
-    std::string work_dir = "ak_graph_data";
+    Timer qs_time, rc_time;
+    if (argc != 4) {
+        std::cerr << "Usage: " << argv[0] << " <locus> <version> <work_dir>\n";
+        return 1;
+    }
+    std::string locus = argv[1];
+    std::string version = argv[2];
+    std::string work_dir = argv[3];
 
     std::string output_seq_map_file = work_dir + "/" + locus + "_output_seq_map_" + version + ".tsv";
     std::string table_name = "unique_junctions_" + locus + "_" + version;
 
-    
+    std::cout << "================================================\n";
+    std::cout << "                   Parameters                   \n";
+    std::cout << "================================================\n";
+    std::cout << "LOCUS:         " << locus << "\n";
+    std::cout << "VERSION:       " << version << "\n";
+    std::cout << "WORKDIR:       " << work_dir << "\n";
+    std::cout << "table_name:    " << table_name << "\n";
+    std::cout << "================================================\n";
+
     qs_time.start();
     mem_file mf = query_and_stream(table_name);
     output_sequence_map(mf, output_seq_map_file.c_str(), {1,3}, false);
@@ -213,4 +220,3 @@ int main(void) {
 
     return 0;
 }
-// time docker run -v $(pwd):/data compairr -m -g -t 100 -d 1 --distance /data/dedup_repertoire.tsv -p /data/pairs_2.tsv

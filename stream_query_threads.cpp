@@ -1,4 +1,5 @@
 #include <iostream>
+#include <format>
 #include <fstream>
 #include <pqxx/pqxx>
 #include <compairr/api.h>
@@ -15,19 +16,15 @@ struct mem_file {
     char *mem;
 };
 
-mem_file query_and_stream(void) {
+mem_file query_and_stream(const std::string& table_name) {
     // Connect to the database
     pqxx::connection cx{"postgresql://postgres:example@ak-db/airrkb_v1"};
     pqxx::work tx{cx};
+    std::string query = "SELECT sequence_id, junction_aa FROM " + table_name;
 
     std::string buffer = "repertoire_id\tsequence_id\tduplicate_count\tjunction_aa\n";
     std::string repertoire_id = "rep1"; // same for all rows
-    for (auto [sequence_id, junction_aa] :
-        tx.stream<std::string, std::string>(
-            "SELECT sequence_id, junction_aa "
-            "FROM unique_junction_trb_v1"
-        )
-    ) {
+    for (auto [sequence_id, junction_aa] : tx.stream<std::string, std::string>(query)) {
         buffer += repertoire_id + "\t";         // repertoire_id
         buffer += sequence_id + "\t";             // sequence_id
         buffer += "1\t";                        // duplicate_count
@@ -119,7 +116,13 @@ void free_mem_file(mem_file mf) {
     free(mf.mem);
 }
 
-void run_compairr(mem_file mf) {
+void run_compairr(const mem_file& mf, const std::string& locus, const std::string& version,
+                                const std::string& work_dir, const std::string& n_threads) {
+
+    std::string log_file = work_dir + "/" + locus + "_" + "compairr"  + "_" + version + ".log";
+    std::string matrix_file = work_dir + "/" + locus + "_" + "output_matrix" + "_" + version + ".tsv";
+    std::string pairs_file = work_dir + "/" + locus + "_" + "output_pairs" + "_" + version + ".tsv";
+
     std::vector<std::string> argv_strs;
     argv_strs.push_back("filler for prog_name, doesn't matter but needs to be here");
     argv_strs.push_back("-m");                  // compute overlap matrix
@@ -131,16 +134,16 @@ void run_compairr(mem_file mf) {
     argv_strs.push_back("1");
     argv_strs.push_back("-i");                  // indels
     argv_strs.push_back("-l");                  // log filename
-    argv_strs.push_back("./output/compairr.log");
+    argv_strs.push_back(log_file);
     argv_strs.push_back("-o");                  // matrix output filename
-    argv_strs.push_back("./output/output_matrix.tsv");
+    argv_strs.push_back(matrix_file);
     argv_strs.push_back("--no-matrix");         // no matrix output
     argv_strs.push_back("-p");                  // pairs output filename
-    argv_strs.push_back("./output/output_pairs_trb_v3.tsv");
+    argv_strs.push_back(pairs_file);
     argv_strs.push_back("-q");                  // pairs files seq id only
     argv_strs.push_back("-r");                  // deduplicate pairs
     argv_strs.push_back("-t");                  // threads
-    argv_strs.push_back("8");
+    argv_strs.push_back(n_threads);
 
     std::vector<char*> argv_vec;
     for (auto &s : argv_strs) {
@@ -181,22 +184,45 @@ void run_compairr(mem_file mf) {
     close_files();
 }
 
-int main(void) {
+int main(int argc, char* argv[]) {
+
     Timer qs_time, rc_time;
     
+    if (argc != 5) {
+        std::cerr << "Usage: " << argv[0] << " <locus> <version> <work_dir> <n_threads>\n";
+        return 1;
+    }
+    std::string locus = argv[1];
+    std::string version = argv[2];
+    std::string work_dir = argv[3];
+    std::string n_threads = argv[4];
+
+    std::string output_seq_map_file = work_dir + "/" + locus + "_output_seq_map_" + version + ".tsv";
+    std::string table_name = "unique_junctions_" + locus + "_" + version;
+
+    std::cout << "================================================\n";
+    std::cout << "                   Parameters                   \n";
+    std::cout << "================================================\n";
+    std::cout << "LOCUS:         " << locus << "\n";
+    std::cout << "VERSION:       " << version << "\n";
+    std::cout << "WORKDIR:       " << work_dir << "\n";
+    std::cout << "N_THREADS:     " << n_threads << "\n";
+    std::cout << "TABLE_NAME:    " << table_name << "\n";
+    std::cout << "================================================\n";
+
+    
     qs_time.start();
-    mem_file mf = query_and_stream();
-    output_sequence_map(mf, "./output/output_seq_map_trb_v3.tsv", {1,3}, false);
+    mem_file mf = query_and_stream(table_name);
+    output_sequence_map(mf, output_seq_map_file.c_str(), {1,3}, false);
     std::cout << "query_and_stream():  ";
     qs_time.view(std::cout); 
     std::cout << std::endl;
 
     rc_time.start();
-    run_compairr(mf);
+    run_compairr(mf, locus, version, work_dir, n_threads);
     std::cout << "run_compairr():      ";
     rc_time.view(std::cout);
     std::cout << std::endl;
 
     return 0;
 }
-// time docker run -v $(pwd):/data compairr -m -g -t 100 -d 1 --distance /data/dedup_repertoire.tsv -p /data/pairs_2.tsv
