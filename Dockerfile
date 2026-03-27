@@ -10,6 +10,7 @@ RUN apt-get update && \
         python3-pip \
         python3-sphinx \
         python3.12-venv \
+        sqlite3 \
         build-essential \
         libomp-dev \
         cmake \
