@@ -6,6 +6,9 @@
 #include <vector>
 #include <string>
 #include "utils/timer.h"
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 using std::cout;
 using std::endl;
@@ -18,7 +21,7 @@ struct mem_file {
 
 mem_file query_and_stream(const std::string& table_name) {
     // Connect to the database
-    pqxx::connection cx{"postgresql://postgres:example@ak-db/airrkb_v1"};
+    pqxx::connection cx{"postgresql://postgres:example@ak-db/airrkb_v2"};
     pqxx::work tx{cx};
     std::string query = "SELECT sequence_id, junction_aa FROM " + table_name;
 
@@ -116,12 +119,21 @@ void free_mem_file(mem_file mf) {
     free(mf.mem);
 }
 
-void run_compairr(const mem_file& mf, const std::string& locus, const std::string& version,
-                                const std::string& work_dir, const std::string& n_threads) {
+void create_directories_if_not_exist(const std::string& dir) {
+    if (!fs::exists(dir)) {
+        std::cout << "Creating directory: " << dir << std::endl;
+        fs::create_directories(dir); // Create the directory if it does not exist
+    }
+}
 
-    std::string log_file = work_dir + "/" + locus + "_" + "compairr"  + "_" + version + ".log";
-    std::string matrix_file = work_dir + "/" + locus + "_" + "output_matrix" + "_" + version + ".tsv";
-    std::string pairs_file = work_dir + "/" + locus + "_" + "output_pairs" + "_" + version + ".tsv";
+
+
+void run_compairr(const mem_file& mf, const std::string& locus, const std::string& version,
+                                const std::string& data_dir, const std::string& n_threads) {
+
+    std::string log_file = data_dir + "/logs/" + locus + "_" + "compairr"  + "_" + version + ".log";
+    std::string matrix_file = data_dir + "/pair_files/" + locus + "_" + "output_matrix" + "_" + version + ".tsv";
+    std::string pairs_file = data_dir + "/pair_files/" + locus + "_" + "output_pairs" + "_" + version + ".tsv";
 
     std::vector<std::string> argv_strs;
     argv_strs.push_back("filler for prog_name, doesn't matter but needs to be here");
@@ -189,23 +201,27 @@ int main(int argc, char* argv[]) {
     Timer qs_time, rc_time;
     
     if (argc != 5) {
-        std::cerr << "Usage: " << argv[0] << " <locus> <version> <work_dir> <n_threads>\n";
+        std::cerr << "Usage: " << argv[0] << " <locus> <version> <data_dir> <n_threads>\n";
         return 1;
     }
     std::string locus = argv[1];
     std::string version = argv[2];
-    std::string work_dir = argv[3];
+    std::string data_dir = argv[3];
     std::string n_threads = argv[4];
 
-    std::string output_seq_map_file = work_dir + "/" + locus + "_output_seq_map_" + version + ".tsv";
+    std::string output_seq_map_file = data_dir + "/pair_files/" + locus + "_output_seq_map_" + version + ".tsv";
     std::string table_name = "unique_junctions_" + locus + "_" + version;
+
+    // Create the necessary directories if they do not exist
+    create_directories_if_not_exist(data_dir + "/logs");
+    create_directories_if_not_exist(data_dir + "/pair_files");
 
     std::cout << "================================================\n";
     std::cout << "                   Parameters                   \n";
     std::cout << "================================================\n";
     std::cout << "LOCUS:         " << locus << "\n";
     std::cout << "VERSION:       " << version << "\n";
-    std::cout << "WORKDIR:       " << work_dir << "\n";
+    std::cout << "DATA_DIR:       " << data_dir << "\n";
     std::cout << "N_THREADS:     " << n_threads << "\n";
     std::cout << "TABLE_NAME:    " << table_name << "\n";
     std::cout << "================================================\n";
@@ -219,7 +235,7 @@ int main(int argc, char* argv[]) {
     std::cout << std::endl;
 
     rc_time.start();
-    run_compairr(mf, locus, version, work_dir, n_threads);
+    run_compairr(mf, locus, version, data_dir, n_threads);
     std::cout << "run_compairr():      ";
     rc_time.view(std::cout);
     std::cout << std::endl;

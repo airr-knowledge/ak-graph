@@ -1,6 +1,8 @@
 .git
 .gitignore
 ak_graph_data
+ak_graph_data_v2
+local_ak_graph_data
 logFiles
 output
 __pycache__
@@ -10,3 +12,4 @@ __pycache__
 *.zip
 *.tar
 *.tsv
+*.db

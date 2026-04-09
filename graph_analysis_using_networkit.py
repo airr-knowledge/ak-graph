@@ -48,7 +48,6 @@ def load_junction_aa_mapping(MAP_FILE):
     with open(MAP_FILE, "r") as f:
         for line in f:
             parts = line.rstrip("\n").split("\t")
-            # if len(parts) == 2:
             id_dict[int(parts[0])] = parts[1]
 
     log(f"Loaded {len(id_dict):,} nodes")
@@ -93,7 +92,7 @@ def core_decomposition_stats(g, FIG_DIR):
     plt.xlabel("Core Number")
     plt.ylabel("# Nodes")
     plt.title("k-core Distribution")
-    plt.savefig(f"{FIG_DIR}/kcore_distribution.png", dpi=300)
+    plt.savefig(f"{FIG_DIR}/kcore_distribution.png", dpi=600)
     plt.close()
     log(f"Time Core Decomposition plot: {time.time() - start:.2f} sec\n")
     
@@ -112,40 +111,47 @@ def analyze_power_law(g, FIG_DIR):
         log(f"Power-law vs {dist}: R={R:.3f}, p={p:.3f}")
 
 
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+    fig, axes = plt.subplots(1, 1, figsize=(5, 4))
     # PDF plot (left)
 
-    ax = axes[0]
+    ax = axes
     fit.plot_pdf(color='b', linewidth=2, ax=ax, label='Empirical PDF')
     fit.power_law.plot_pdf(color='r', linestyle='--', ax=ax, label='Power-law')
+    fit.truncated_power_law.plot_ccdf(color='cyan', linestyle='-', alpha=0.8, ax=ax, label='Truncated Power-law')
     fit.exponential.plot_pdf(color='g', linestyle=':', ax=ax, label='Exponential')
     fit.lognormal.plot_pdf(color='m', linestyle='-.', ax=ax, label='Lognormal')
-    fit.stretched_exponential.plot_pdf(color='orange', linestyle='-', ax=ax, label='Stretched exp')
+    fit.stretched_exponential.plot_pdf(color='orange', linestyle=(0, (3, 5, 1, 5)), ax=ax, label='Stretched exp')
+
 
     # Mark xmin for power-law
     ax.axvline(fit.power_law.xmin, color='r', linestyle=':', label='Power-law xmin')
     ax.set_xlabel("Degree")
     ax.set_ylabel("PDF")
-    ax.set_title("Degree Distribution (PDF)")
+    # ax.set_title("Degree Distribution (PDF)")
     ax.legend()
+    plt.tight_layout()
+    plt.savefig(f"{FIG_DIR}/degree_distribution_pdf.png", dpi=600, bbox_inches = 'tight')
+    plt.show()
 
-    # CCDF plot (right)d
-    ax = axes[1]
+    # CCDF plot 
+    fig, axes = plt.subplots(1, 1, figsize=(5, 4))
+    ax = axes
     fit.plot_ccdf(color='b', linewidth=2, ax=ax, label='Empirical CCDF')
     fit.power_law.plot_ccdf(color='r', linestyle='--', ax=ax, label='Power-law')
+    fit.truncated_power_law.plot_ccdf(color='cyan', linestyle='-', alpha=0.8, ax=ax, label='Truncated Power-law')
     fit.exponential.plot_ccdf(color='g', linestyle=':', ax=ax, label='Exponential')
     fit.lognormal.plot_ccdf(color='m', linestyle='-.', ax=ax, label='Lognormal')
-    fit.stretched_exponential.plot_ccdf(color='orange', linestyle='-', ax=ax, label='Stretched exp')
+    fit.stretched_exponential.plot_ccdf(color='orange', linestyle=(0, (3, 5, 1, 5)), ax=ax, label='Stretched exp')
 
     # Mark xmin for power-law
     ax.axvline(fit.power_law.xmin, color='r', linestyle=':', label='Power-law xmin')
     ax.set_xlabel("Degree")
     ax.set_ylabel("CCDF")
-    ax.set_title("Degree Distribution (CCDF)")
+    # ax.set_title("Degree Distribution (CCDF)")
     ax.legend()
 
     plt.tight_layout()
-    plt.savefig(f"{FIG_DIR}/degree_distribution_pdf_ccdf.png", dpi=300)
+    plt.savefig(f"{FIG_DIR}/degree_distribution_ccdf.png", dpi=600, bbox_inches = 'tight')
     plt.show()
 
     log(f"Time for powerlaw fit: {time.time() - start:.2f} sec\n")
@@ -195,14 +201,14 @@ def get_general_graph_statistics(g, FIG_DIR, LCC_FILE):
     start = time.time()
     dd = sorted(nk.centrality.DegreeCentrality(g).run().scores(), reverse=True)
     degrees, numberOfNodes = np.unique(dd, return_counts=True)
-    plt.figure(figsize=(12,10))
+    plt.figure(figsize=(6,4))
     plt.xscale("log")
-    plt.xlabel("degree")
+    plt.xlabel("Degree")
     plt.yscale("log")
-    plt.ylabel("number of nodes")
+    plt.ylabel("Number of nodes")
     plt.plot(degrees, numberOfNodes)
     plt.title("Degree distribution before removing isolates")
-    plt.savefig(f"{FIG_DIR}/graph_degree_distribution_with_isolates.png", dpi = 300)
+    plt.savefig(f"{FIG_DIR}/graph_degree_distribution_with_isolates.png", dpi = 600)
     plt.close()
     log(f"Time for plotting degree distribution: {time.time() - start:.2f} sec\n")
     
@@ -217,71 +223,76 @@ def get_general_graph_statistics(g, FIG_DIR, LCC_FILE):
     log(f"Time to remove isolates from the graph: {time.time() - start:.2f} sec\n")
 
 
-    # Network overview after removing isolates
+    # # Network overview after removing isolates
   
-    start = time.time()
-    log(f"{nk.overview(g)}")
-    log(f"Graph overview time after removing isolates: {time.time() - start:.2f} sec\n")
+    # start = time.time()
+    # log(f"{nk.overview(g)}")
+    # log(f"Graph overview time after removing isolates: {time.time() - start:.2f} sec\n")
 
-    # Degree distribution after removing isolates
-    start = time.time()
-    dd = sorted(nk.centrality.DegreeCentrality(g).run().scores(), reverse=True)
-    degrees, numberOfNodes = np.unique(dd, return_counts=True)
-    plt.figure(figsize=(12,10))
-    plt.xscale("log")
-    plt.xlabel("degree")
-    plt.yscale("log")
-    plt.ylabel("number of nodes")
-    plt.plot(degrees, numberOfNodes)
-    plt.savefig(f"{FIG_DIR}/graph_degree_distribution_without_isolates.png", dpi = 300)
-    plt.close()
-    log(f"Time for plotting degree distribution: {time.time() - start:.2f} sec\n")
+    # # Degree distribution after removing isolates
+    # start = time.time()
+    # dd = sorted(nk.centrality.DegreeCentrality(g).run().scores(), reverse=True)
+    # degrees, numberOfNodes = np.unique(dd, return_counts=True)
+    # plt.figure(figsize=(6,4))
+    # plt.xscale("log")
+    # plt.xlabel("Degree")
+    # plt.yscale("log")
+    # plt.ylabel("Number of nodes")
+    # plt.plot(degrees, numberOfNodes)
+    # plt.savefig(f"{FIG_DIR}/graph_degree_distribution_without_isolates.png", dpi = 600)
+    # plt.close()
+    # log(f"Time for plotting degree distribution: {time.time() - start:.2f} sec\n")
 
-    # ClusteringPerDegree
-    start = time.time()
-    plt.figure(figsize=(16,12))
-    nk.plot.clusteringPerDegree(g)
-    plt.tight_layout()
-    plt.savefig(f"{FIG_DIR}/clustering_per_degreee_without_isolates.png", dpi=300)
-    plt.close()
-    log(f"ClusteringPerDegree plot time: {time.time() - start:.2f} sec\n")
+    # # ClusteringPerDegree
+    # start = time.time()
+    # plt.figure(figsize=(16,12))
+    # nk.plot.clusteringPerDegree(g)
+    # plt.tight_layout()
+    # plt.savefig(f"{FIG_DIR}/clustering_per_degreee_without_isolates.png", dpi=600)
+    # plt.close()
+    # log(f"ClusteringPerDegree plot time: {time.time() - start:.2f} sec\n")
     
-    # Extract Largest Connected Component and write it in a file
-    start = time.time()
-    cc = nk.components.ConnectedComponents(g)
-    cc.run()
-    largest_component = cc.extractLargestConnectedComponent(g, compactGraph=False)
-    log(f"Largest connected component finiding time: {time.time() - start:.2f} sec\n")
+    # # Extract Largest Connected Component and write it in a file
+    # start = time.time()
+    # cc = nk.components.ConnectedComponents(g)
+    # cc.run()
+    # largest_component = cc.extractLargestConnectedComponent(g, compactGraph=False)
+    # log(f"Largest connected component finiding time: {time.time() - start:.2f} sec\n")
 
-    start = time.time()
-    nk.writeGraph(largest_component, LCC_FILE, nk.Format.EdgeListTabOne)
-    log(f"Largest connected component write time: {time.time() - start:.2f} sec\n")
+    # # start = time.time()
+    # # nk.writeGraph(largest_component, LCC_FILE, nk.Format.EdgeListTabOne)
+    # # log(f"Largest connected component write time: {time.time() - start:.2f} sec\n")
 
-    # Connected Component Sizes plot without isolates and biggest one at the end
-    start = time.time()
-    cc = nk.components.ConnectedComponents(g)
-    cc.run()
-    component_sizes = cc.getComponentSizes().values()        # list of component sizes
-    num_components = len(component_sizes)
-    print(f"Found {num_components} connected components")
+    # # Connected Component Sizes plot without isolates and biggest one at the end
+    # start = time.time()
+    # cc = nk.components.ConnectedComponents(g)
+    # cc.run()
+    # component_sizes = cc.getComponentSizes().values()        # list of component sizes
+    # num_components = len(component_sizes)
+    # print(f"Found {num_components} connected components")
 
-    sizes = list(component_sizes)
-    giant = max(sizes)
-    rest = [s for s in sizes if s != giant]
-    plt.figure(figsize=(10,7))
-    plt.hist(rest, bins=np.logspace(np.log10(1), np.log10(max(rest)), 100), log=True, color='blue', alpha=0.7)
-    plt.xscale('log')
-    plt.axvline(giant, color='red', linestyle='--', label=f"Giant component = {giant}")
-    plt.xlabel("Component size")
-    plt.ylabel("Count (log)")
-    plt.title("Component size distribution (excluding giant component)")
-    plt.legend()
-    plt.savefig(f"{FIG_DIR}/component_size_distribution_without_isolates.png", dpi=300)
-    plt.close()
-    log(f"Connected component sizes plot time: {time.time() - start:.2f} sec\n")
+    # sizes = list(component_sizes)
+    # giant = max(sizes)
+    # rest = [s for s in sizes if s != giant]
+    # plt.figure(figsize=(6,4))
+    # plt.hist(rest, bins=np.logspace(np.log10(1), np.log10(max(rest)), 100), log=True, color='blue', alpha=0.7)
+    # plt.xscale('log')
+    # plt.axvline(giant, color='red', linestyle='--', label=f"Giant component = {giant}")
+    # plt.xlabel("Component size")
+    # plt.ylabel("Count (log)")
+    # plt.title("Component size distribution (excluding giant component)")
+    # plt.legend()
+    # plt.savefig(f"{FIG_DIR}/component_size_distribution_without_isolates.png", dpi=600)
+    # plt.close()
+    # log(f"Connected component sizes plot time: {time.time() - start:.2f} sec\n")
+    
+    
+    analyze_power_law(g, FIG_DIR)
 
-
-# WORKDIR = "./ak_graph_data/"
+def create_directories_if_not_exist(path):
+    """Create directories if they do not exist"""
+    if not os.path.exists(path):
+        os.makedirs(path)  # Create all intermediate directories as needed
 
 LOG_FILE = None
 def main():
@@ -289,14 +300,14 @@ def main():
     parser.add_argument("ANALYSIS_TYPE", help="alaysis_tyoe [build_graph, graph_stat, map_junction]")
     parser.add_argument("LOCUS", help="Locus to build/analyze the graph (tra, trb, trd, trg)")
     parser.add_argument("--VERSION", default="v1", help="Version of the table name that will be put on the graph")
-    parser.add_argument("--WORKDIR", default="./ak_graph_data/", help="Version of the table name that will be put on the graph")
+    parser.add_argument("--DATA_DIR", default="/ak_graph_data/", help="Version of the table name that will be put on the graph")
     parser.add_argument("--MAX_THREADS", default=64, help="Maximum number of threads to use by the graph algorithm")
     
     args = parser.parse_args()
     ANALYSIS_TYPE = args.ANALYSIS_TYPE
     LOCUS = args.LOCUS
     VERSION = args.VERSION
-    WORKDIR = args.WORKDIR
+    DATA_DIR = args.DATA_DIR
     MAX_THREADS = args.MAX_THREADS
     
     if LOCUS not in ['tra', 'trb', 'trd', 'trg', 'igh', 'igk', 'igl']:
@@ -306,15 +317,22 @@ def main():
     
     global LOG_FILE
     
-    EDGE_FILE = f"{WORKDIR}/{LOCUS}_output_pairs_{VERSION}.tsv"
-    GRAPH_FILE = f"{WORKDIR}/{LOCUS}_graph_{VERSION}.nkbg003"
-    MAP_FILE = f"{WORKDIR}/{LOCUS}_output_seq_map_{VERSION}.tsv"
-    FIG_DIR = f"{WORKDIR}/figures/{LOCUS}_{VERSION}/"
-    LOG_FILE = f"{WORKDIR}/logs/{LOCUS}_analysis_{VERSION}.log"
-    LCC_FILE = f'{WORKDIR}/{LOCUS}_largest_connected_component_{VERSION}.edgelist.txt'
+    EDGE_FILE = f"{DATA_DIR}/pair_files/{LOCUS}_output_pairs_{VERSION}.tsv"
+    MAP_FILE = f"{DATA_DIR}/pair_files/{LOCUS}_output_seq_map_{VERSION}.tsv"
+    GRAPH_FILE = f"{DATA_DIR}/graph_files/{LOCUS}_graph_{VERSION}.nkbg003"
+    LCC_FILE = f'{DATA_DIR}/graph_files/{LOCUS}_largest_connected_component_{VERSION}.edgelist.txt'
+    FIG_DIR = f"{DATA_DIR}/figures/{LOCUS}_{VERSION}/graph_analysis/"
+    LOG_FILE = f"{DATA_DIR}/logs/{LOCUS}_analysis_{VERSION}.log"
     
-    #create figure directory if not exist
-    os.makedirs(FIG_DIR, exist_ok=True)
+    # FIG_DIR = f"{DATA_DIR}/figures/{LOCUS}_{VERSION}/"
+    # Create the necessary directories if they do not exist
+    create_directories_if_not_exist(f"{DATA_DIR}/pair_files")
+    create_directories_if_not_exist(f"{DATA_DIR}/graph_files")
+    create_directories_if_not_exist(f"{FIG_DIR}")
+    create_directories_if_not_exist(f"{DATA_DIR}/logs")
+    
+    
+    
     
     log("================================================")
     log("                   Parameters                   ")
@@ -322,7 +340,7 @@ def main():
     log(f"ANALYSIS_TYPE:      {ANALYSIS_TYPE}")
     log(f"LOCUS:              {LOCUS}")
     log(f"VERSION:            {VERSION}")
-    log(f"WORKDIR:            {WORKDIR}")
+    log(f"DATA_DIR:           {DATA_DIR}")
     log(f"MAX_THREADS:        {MAX_THREADS}")
     log("================================================")
     

@@ -119,9 +119,9 @@ void free_mem_file(mem_file mf) {
 
 void run_compairr(const mem_file& mf, const std::string& locus, const std::string& version, const std::string& work_dir) {
 
-    std::string log_file = work_dir + "/" + locus + "_" + "compairr"  + "_" + version + ".log";
-    std::string matrix_file = work_dir + "/" + locus + "_" + "output_matrix" + "_" + version + ".tsv";
-    std::string pairs_file = work_dir + "/" + locus + "_" + "output_pairs" + "_" + version + ".tsv";
+    std::string log_file = work_dir + "/logs/" + locus + "_" + "compairr"  + "_" + version + ".log";
+    std::string matrix_file = work_dir + "/pair_files/" + locus + "_" + "output_matrix" + "_" + version + ".tsv";
+    std::string pairs_file = work_dir + "/pair_files/" + locus + "_" + "output_pairs" + "_" + version + ".tsv";
 
     std::vector<std::string> argv_strs;
     argv_strs.push_back("filler for prog_name, doesn't matter but needs to be here");
@@ -193,7 +193,7 @@ int main(int argc, char* argv[]) {
     std::string version = argv[2];
     std::string work_dir = argv[3];
 
-    std::string output_seq_map_file = work_dir + "/" + locus + "_output_seq_map_" + version + ".tsv";
+    std::string output_seq_map_file = work_dir + "/pair_files/" + locus + "_output_seq_map_" + version + ".tsv";
     std::string table_name = "unique_junctions_" + locus + "_" + version;
 
     std::cout << "================================================\n";

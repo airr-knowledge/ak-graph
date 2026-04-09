@@ -2,6 +2,7 @@ import psycopg
 import argparse
 from dotenv import dotenv_values
 import pandas as pd
+import os
 
 config = dotenv_values(".env")
 
@@ -31,53 +32,62 @@ def get_cdr3_and_epitopes(locus):
     if locus == 'both':
         base_query = """
         SELECT
-        c.cdr3_aa,
-        c.locus,
-        e.sequence_aa,
-        a.measurement_category
-        FROM "Assay" a
+            e.sequence_aa,
+            e.source_protein,
+            e.source_organism,
+            ch.junction_aa,
+            ch.locus,
+            ch.species,
+            a.measurement_category
+        FROM "TCRpMHCComplex" c
+        JOIN "TCellReceptor" t
+            ON c.tcr = t.akc_id
+        JOIN "Chain" ch
+            ON t.tra_chain = ch.akc_id
         JOIN "Epitope" e
+            ON c.epitope = e.akc_id
+        JOIN "Assay" a
             ON a.epitope = e.akc_id
-        JOIN "Assay_tcell_receptors" atr
-            ON a.akc_id = atr.assay_akc_id
-        JOIN "TCellReceptor" tcr
-            ON atr.tcell_receptors_akc_id = tcr.akc_id
-        JOIN "Chain" c
-            ON c.akc_id = tcr.tra_chain
 
         UNION ALL
 
         SELECT
-            c.cdr3_aa,
-            c.locus,
             e.sequence_aa,
+            e.source_protein,
+            e.source_organism,
+            ch.junction_aa,
+            ch.locus,
+            ch.species,
             a.measurement_category
-        FROM "Assay" a
+        FROM "TCRpMHCComplex" c
+        JOIN "TCellReceptor" t
+            ON c.tcr = t.akc_id
+        JOIN "Chain" ch
+            ON t.trb_chain = ch.akc_id
         JOIN "Epitope" e
+            ON c.epitope = e.akc_id
+        JOIN "Assay" a
             ON a.epitope = e.akc_id
-        JOIN "Assay_tcell_receptors" atr
-            ON a.akc_id = atr.assay_akc_id
-        JOIN "TCellReceptor" tcr
-            ON atr.tcell_receptors_akc_id = tcr.akc_id
-        JOIN "Chain" c
-            ON c.akc_id = tcr.trb_chain;
         """
     else: 
         base_query = f"""
         SELECT
-            c.cdr3_aa,
-            c.locus,
             e.sequence_aa,
+            e.source_protein,
+            e.source_organism,
+            ch.junction_aa,
+            ch.locus,
+            ch.species,
             a.measurement_category
-        FROM "Assay" a
+        FROM "TCRpMHCComplex" c
+        JOIN "TCellReceptor" t
+            ON c.tcr = t.akc_id
+        JOIN "Chain" ch
+            ON t.{locus}_chain = ch.akc_id
         JOIN "Epitope" e
+            ON c.epitope = e.akc_id
+        JOIN "Assay" a
             ON a.epitope = e.akc_id
-        JOIN "Assay_tcell_receptors" atr
-            ON a.akc_id = atr.assay_akc_id
-        JOIN "TCellReceptor" tcr
-            ON atr.tcell_receptors_akc_id = tcr.akc_id
-        JOIN "Chain" c
-            ON tcr.{locus}_chain = c.akc_id
         """
     return base_query, params
 
@@ -90,17 +100,21 @@ def get_epitope_counts(species=None):
     base_query += " GROUP BY sequence_aa"
     return base_query, params
 
+def create_directories_if_not_exist(path):
+    """Create directories if they do not exist"""
+    if not os.path.exists(path):
+        os.makedirs(path)
 
 def main():
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("--LOCUS", default = 'tra', help="Locus to get the epitope data (tra, trb, both)")
-    parser.add_argument("--WORKDIR", default="./ak_graph_data/", help="Version of the table name that will be put on the graph")
+    parser.add_argument("LOCUS", default = 'tra', help="Locus to get the epitope data (tra, trb, both)")
+    parser.add_argument("--DATA_DIR", default="/ak_graph_data/", help="Version of the table name that will be put on the graph")
     parser.add_argument("--VERSION", default="v1", help="Version of the table name that will be put on the graph")
     
     args = parser.parse_args()
     LOCUS = args.LOCUS
-    WORKDIR = args.WORKDIR
+    DATA_DIR = args.DATA_DIR
     VERSION = args.VERSION
     
     if LOCUS not in ['tra', 'trb', 'trd', 'trg', 'igh', 'igk', 'igl']:
@@ -108,7 +122,20 @@ def main():
         sys.exit(1) # Exit with an error code
 
     query, params = get_cdr3_and_epitopes(LOCUS)
-    FILE_PATH = f"{WORKDIR}/{LOCUS}_cdr3_epitope_info_{VERSION}.parquet"
+    FILE_PATH = f"{DATA_DIR}/epitope_data/{LOCUS}_cdr3_epitope_info_{VERSION}.parquet"
+    # local_fig_dir = f'./ak_graph_data_v2/epitope_data'
+    
+    # Create the necessary directories if they do not exist
+    create_directories_if_not_exist(f"{DATA_DIR}/epitope_data")
+    # create_directories_if_not_exist(f"{local_fig_dir}/epitope_data")
+    
+    print("================================================")
+    print("                   Parameters                   ")
+    print("================================================")
+    print(f"LOCUS:              {LOCUS}")
+    print(f"VERSION:            {VERSION}")
+    print(f"DATA_DIR:           {DATA_DIR}")
+    print("================================================")
     
     with psycopg.connect(**DB_CONFIG) as conn:
         with conn.cursor() as cur:
@@ -116,9 +143,12 @@ def main():
             cur.execute(query, params)
             rows = cur.fetchall()
             print("Total number of rows returned from the query: ", len(rows))
-            df = pd.DataFrame(rows, columns=["cdr3_aa", "locus", "epitope", "measurement_category"])
+            columns = ['akc_epitope_seq_aa', 'akc_source_protein', 'akc_source_organism', 'junction_aa', 'locus', 'akc_species', 'akc_measurement_category']
+            df = pd.DataFrame(rows, columns=columns)
             df.to_parquet(FILE_PATH, index=False)
+            print(df.head())
         conn.commit()
 
 if __name__ == "__main__":
     main()
+
