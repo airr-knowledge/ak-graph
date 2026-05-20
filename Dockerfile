@@ -39,7 +39,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Install networkit inside venv
 RUN pip install --upgrade pip
-RUN pip install networkit matplotlib numpy pandas powerlaw networkx seaborn scipy scikit-learn psycopg sqlalchemy python-dotenv pyarrow db-to-sqlite psycopg2-binary
+RUN pip install networkit matplotlib numpy pandas powerlaw networkx seaborn scipy scikit-learn psycopg sqlalchemy python-dotenv pyarrow db-to-sqlite psycopg2-binary logomaker
 
 # compile C++ code
 RUN mkdir /ak-graph
