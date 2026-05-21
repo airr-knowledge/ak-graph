@@ -1,19 +1,34 @@
-import networkit as nk
 import numpy as np
 import pandas as pd
-import time
-import os
-import powerlaw
+
+import networkit as nk
 from networkit import vizbridges
-import argparse
+import powerlaw
+
 from scipy.stats import spearmanr
-from collections import defaultdict
+
 import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
+matplotlib.use("Agg")
+import logomaker
+
+from collections import defaultdict
+from collections import Counter
+
+import argparse
+import time
+import os
 
 valid_aa = r"^[ACDEFGHIKLMNPQRSTVWY]+$"
+
+aa_groups = {
+    'Hydrophobic': set('AVLIPFWM'),
+    'Polar': set('STNQ'),
+    'Positive': set('KRH'),
+    'Negative': set('DE'),
+    'Special': set('CGY')
+}
 
 
 def log(msg):
@@ -457,6 +472,114 @@ def epitope_df_figures(df):
     log(f"CDR3 perspective Spearman cdr3 length vs epitope count: {rho1} p = {p1}")
     log(f"Epitope perspective Spearman epitope length vs cdr3 count: {rho2} p = {p2}")
     
+# ==================================================
+# TOP EPITOPE CDR3 Logo Plot
+# ==================================================
+def cdr3_logo_for_top_epitopes(epitope_to_cdr3s, FIG_DIR):
+    top_epitopes = sorted(epitope_to_cdr3s.items(), key=lambda x: len(x[1]), reverse=True)[:2]
+    top_epitopes = [ep for ep, cdr3s in top_epitopes]  # just the epitope strings
+
+    # print("Top epitopes:", top_epitopes)
+
+    for ep in top_epitopes:
+        cdr3_list = epitope_to_cdr3s[ep]
+        if len(cdr3_list) == 0:
+            continue
+
+        ## plot receptor AA - epitope AA distribution
+        plot_cdr3_vs_epitope_aa_distribution(cdr3_list, ep, FIG_DIR)
+        
+        # Count lengths
+        lengths_count = Counter([len(s) for s in cdr3_list])
+        # Take top 3 most common lengths
+        top_lengths = [l for l, _ in lengths_count.most_common(3)]
+
+        plt.figure(figsize=(max(12, max(top_lengths)), 4 * len(top_lengths)))
+
+        for i, l in enumerate(top_lengths):
+            sequences = [s for s in cdr3_list if len(s) == l]
+            if not sequences:
+                continue
+
+            counts_df = logomaker.alignment_to_matrix(sequences, to_type='counts')
+            # print(counts_df)
+            
+            ax = plt.subplot(len(top_lengths), 1, i + 1)
+            logomaker.Logo(
+                counts_df,
+                ax=ax,
+                color_scheme='chemistry',
+                shade_below=0.5,
+                fade_below=0.5,
+                vpad=0.05
+            )
+            ax.set_title(f"{ep} | Length {l} | n={len(sequences)}")
+            ax.set_xlabel("Position in CDR3")
+            ax.set_ylabel("Count")
+
+        plt.tight_layout()
+        save_path = f"{FIG_DIR}/logo_{ep.replace('/', '_')}_multi_length.png"
+        plt.savefig(save_path, dpi=300)
+        plt.close()
+        print(f"Saved multi-length logo for epitope {ep} -> {save_path}")
+    
+# Receptor (CDR3) AA Distribution
+def plot_cdr3_vs_epitope_aa_distribution(cdr3_list, epitope, FIG_DIR):
+    # Flatten CDR3 sequences
+    cdr3_aas = [aa for seq in cdr3_list for aa in seq]
+    
+    # Count amino acids
+    cdr3_counts = Counter(cdr3_aas)
+    ep_counts = Counter(epitope)
+    
+    all_aas = sorted(set(list(cdr3_counts.keys()) + list(ep_counts.keys())))
+    
+    # Map colors based on chemical type
+    colors = []
+    for aa in all_aas:
+        for group, residues in aa_groups.items():
+            if aa in residues:
+                if group == 'Hydrophobic':
+                    colors.append('sandybrown')
+                elif group == 'Polar':
+                    colors.append('skyblue')
+                elif group == 'Positive':
+                    colors.append('lightgreen')
+                elif group == 'Negative':
+                    colors.append('salmon')
+                else:  # Special
+                    colors.append('plum')
+                break
+        else:
+            colors.append('grey')  # Unknown
+    
+    # Prepare data
+    cdr3_values = [cdr3_counts.get(aa, 0) for aa in all_aas]
+    ep_values = [ep_counts.get(aa, 0) for aa in all_aas]
+    
+    x = range(len(all_aas))
+    
+    plt.figure(figsize=(14,6))
+    
+    # Bar width for side-by-side
+    width = 0.4
+    
+    plt.bar([i - width/2 for i in x], cdr3_values, width=width, color=colors, alpha=0.8, label='CDR3')
+    plt.bar([i + width/2 for i in x], ep_values, width=width, color=colors, alpha=0.4, label='Epitope')
+    
+    plt.xticks(x, all_aas)
+    plt.xlabel('Amino Acid')
+    plt.ylabel('Count')
+    plt.title(f'CDR3 vs. Epitope Amino Acid Distribution | Epitope: {epitope}')
+    plt.legend()
+    plt.tight_layout()
+    
+    save_path = f"{FIG_DIR}/cdr3_vs_epitope_aa_distribution_{epitope.replace('/', '_')}.png"
+    plt.savefig(save_path, dpi=300)
+    plt.close()
+    print(f"Saved CDR3 vs Epitope AA distribution -> {save_path}")
+
+    
 def create_directories_if_not_exist(path):
     """Create directories if they do not exist"""
     if not os.path.exists(path):
@@ -490,13 +613,13 @@ def main():
     FIG_DIR = f"{DATA_DIR}/figures/{LOCUS}_{VERSION}/epitope_analysis/"
     LOG_FILE = f"{DATA_DIR}/logs/{LOCUS}_cdr3_epitope_analysis_{VERSION}.log"
     EPITOPE_INFO_FILE = f"{DATA_DIR}/epitope_data/{LOCUS}_cdr3_epitope_info_{VERSION}.parquet"
-    # local_fig_dir = f'./ak_graph_data_v2/figures/{LOCUS}_{VERSION}'
+    local_fig_dir = f'./ak_graph_data_v2/figures/{LOCUS}_{VERSION}'
     
     # Create the necessary directories if they do not exist
     create_directories_if_not_exist(f"{FIG_DIR}") ## Change it later.
     create_directories_if_not_exist(f"{DATA_DIR}/logs")
     
-    # FIG_DIR = local_fig_dir
+    FIG_DIR = local_fig_dir
     log("================================================")
     log("                   Parameters                   ")
     log("================================================")
@@ -515,7 +638,7 @@ def main():
     #Load the epitope database
     epitope_df = load_epitope_info(EPITOPE_INFO_FILE)
     #load the graph
-    g = load_graph(GRAPH_FILE)
+    # g = load_graph(GRAPH_FILE)
     
     cdr3_to_id_keys_set = set(cdr3_to_id.keys())
     epitope_cdr3_set = set(epitope_df.junction_aa.values)
@@ -526,40 +649,42 @@ def main():
     # common_cdr3 = np.intersect1d(list(seq_dict.keys()), epitope_df.junction_aa.values)
     log(f"Total number of common CDR3: {len(common_cdr3)}")
     epitope_df = epitope_df[epitope_df.junction_aa.isin(common_cdr3)]
-    epitope_df.to_csv('common_trb_and_epitopes_akc_v2.csv', index = False)
+    # epitope_df.to_csv('common_trb_and_epitopes_akc_v2.csv', index = False)
     log(f"Epitope DF Shape: {epitope_df.shape}")
     log("Plot revised epitope df figures.")
-    epitope_df_figures(epitope_df)
+    print(epitope_df.head())
+    # epitope_df_figures(epitope_df)
     # Create bipartite mappings from epitope_df
     epitope_to_cdr3, cdr3_to_epitope = create_bipartite_mapping(epitope_df)
+    cdr3_logo_for_top_epitopes(epitope_to_cdr3, FIG_DIR)
 
-    # Get the number of unique receptors (including neighbors) per epitope
-    epitope_receptor_count = get_receptor_count_per_epitope(g, epitope_to_cdr3, cdr3_to_id, id_to_cdr3)
-    log(f"Epitope receptor counts length : {len(epitope_receptor_count)}")
+    # # Get the number of unique receptors (including neighbors) per epitope
+    # epitope_receptor_count = get_receptor_count_per_epitope(g, epitope_to_cdr3, cdr3_to_id, id_to_cdr3)
+    # log(f"Epitope receptor counts length : {len(epitope_receptor_count)}")
     
-    epitope_degree = epitope_df.groupby("akc_epitope_seq_aa")["junction_aa"].nunique()
-    epitope_degree = epitope_degree.reset_index()
+    # epitope_degree = epitope_df.groupby("akc_epitope_seq_aa")["junction_aa"].nunique()
+    # epitope_degree = epitope_degree.reset_index()
     
-    epitope_degree.columns = ["akc_epitope_seq_aa", "real_receptors"]
-    inf_df = pd.DataFrame(epitope_receptor_count.items(),columns=["akc_epitope_seq_aa", "inferred_receptors"])
-    epitope_specificity_df = epitope_degree.merge(inf_df, on="akc_epitope_seq_aa")
-    epitope_specificity_df["new_receptors"] = (epitope_specificity_df["inferred_receptors"] - epitope_specificity_df["real_receptors"])
+    # epitope_degree.columns = ["akc_epitope_seq_aa", "real_receptors"]
+    # inf_df = pd.DataFrame(epitope_receptor_count.items(),columns=["akc_epitope_seq_aa", "inferred_receptors"])
+    # epitope_specificity_df = epitope_degree.merge(inf_df, on="akc_epitope_seq_aa")
+    # epitope_specificity_df["new_receptors"] = (epitope_specificity_df["inferred_receptors"] - epitope_specificity_df["real_receptors"])
     
-    # Get the epitope distribution (number of unique epitopes per receptor)
-    receptor_epitope_distribution = get_epitope_distribution_per_receptor(g, cdr3_to_epitope, cdr3_to_id, id_to_cdr3)
-    log(f" Len of receptor_epitope_distribution: {len(receptor_epitope_distribution)}")
+    # # Get the epitope distribution (number of unique epitopes per receptor)
+    # receptor_epitope_distribution = get_epitope_distribution_per_receptor(g, cdr3_to_epitope, cdr3_to_id, id_to_cdr3)
+    # log(f" Len of receptor_epitope_distribution: {len(receptor_epitope_distribution)}")
     
-    cdr3_degree = epitope_df.groupby("junction_aa")["akc_epitope_seq_aa"].nunique()
-    cdr3_degree = cdr3_degree.reset_index()
-    cdr3_degree.columns = ["cdr3", "real_epitopes"]
-    inf_receptor_df = pd.DataFrame(receptor_epitope_distribution.items(),columns=["cdr3", "inferred_epitopes"])
-    receptor_specificity_df = cdr3_degree.merge(inf_receptor_df,on="cdr3",how="left")
-    receptor_specificity_df["new_epitopes"] = ( receptor_specificity_df["inferred_epitopes"] - receptor_specificity_df["real_epitopes"])
+    # cdr3_degree = epitope_df.groupby("junction_aa")["akc_epitope_seq_aa"].nunique()
+    # cdr3_degree = cdr3_degree.reset_index()
+    # cdr3_degree.columns = ["cdr3", "real_epitopes"]
+    # inf_receptor_df = pd.DataFrame(receptor_epitope_distribution.items(),columns=["cdr3", "inferred_epitopes"])
+    # receptor_specificity_df = cdr3_degree.merge(inf_receptor_df,on="cdr3",how="left")
+    # receptor_specificity_df["new_epitopes"] = ( receptor_specificity_df["inferred_epitopes"] - receptor_specificity_df["real_epitopes"])
     
-    # epitope_specificity_df.to_csv("epitope_specificity_df.csv", index = False)
-    # receptor_specificity_df.to_csv("receptor_specificity_df.csv", index = False)
+    # # epitope_specificity_df.to_csv("epitope_specificity_df.csv", index = False)
+    # # receptor_specificity_df.to_csv("receptor_specificity_df.csv", index = False)
     
-    plot_inferred_specificity(epitope_specificity_df, receptor_specificity_df)
+    # plot_inferred_specificity(epitope_specificity_df, receptor_specificity_df)
     
     
 if __name__ == "__main__":
